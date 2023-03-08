@@ -69,13 +69,16 @@ class GrpcManager:
                 msg = Response.parse_obj(rsp)
                 handle_msg(msg)
             except Timeout:
-                pass
+                continue
             except Closed:
-                logger.info("连接已关闭...")
+                logger.debug("<g>grpc连接已关闭...</g>")
                 return
             except NNGException as e:
-                logger.error(f"连接出错:{e}")
+                logger.error(f"<r>连接出错:{e}</r>")
                 return
+            except Exception as e:
+                logger.error(f"<r>消息出错:{e}</r>")
+                continue
 
     async def request(self, request: Request) -> Response:
         """

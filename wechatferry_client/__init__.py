@@ -28,7 +28,7 @@ def init():
 
     uninstall("./wcf.exe")
     logger.info("<y>正在注入微信...</y>")
-    if not install(cmd_path="./wcf.exe", debug=False):
+    if not install(cmd_path="./wcf.exe", debug=True):
         logger.error("<r>注入微信失败...</r>")
         exit(-1)
     logger.success("<g>微信注入成功...</g>")
