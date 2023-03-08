@@ -1,8 +1,11 @@
 from enum import IntEnum
 from typing import Optional
 
+from google.protobuf import json_format
 from google.protobuf.message import Message
 from pydantic import BaseModel
+
+from . import wcf_pb2
 
 
 class Functions(IntEnum):
@@ -120,21 +123,6 @@ class XmlMsg(BaseModel):
     """消息类型"""
 
 
-class RequestMsg(BaseModel):
-    """
-    请求消息
-    """
-
-    empty: Optional[EmptyMsg]
-    str: Optional[str]
-    txt: Optional[TextMsg]
-    file: Optional[PathMsg]
-    query: Optional[DbQuery]
-    v: Optional[Verification]
-    m: Optional[AddMembers]
-    xml: Optional[XmlMsg]
-
-
 class Request(BaseModel):
     """
     请求实体
@@ -142,19 +130,25 @@ class Request(BaseModel):
 
     func: Functions
     """请求类型"""
-    msg: RequestMsg
-    """请求消息"""
+    empty: Optional[EmptyMsg] = None
+    str: Optional[str] = None
+    txt: Optional[TextMsg] = None
+    file: Optional[PathMsg] = None
+    query: Optional[DbQuery] = None
+    v: Optional[Verification] = None
+    m: Optional[AddMembers] = None
+    xml: Optional[XmlMsg] = None
 
-    def gen_dict(self) -> dict:
-        """生成dict"""
-        data = {
-            "func": self.func,
-        }
-        for key, value in self.msg.dict().items():
-            if value is not None:
-                data[key] = value
-                break
-        return data
+    def get_request_data(self) -> bytes:
+        """
+        获取Request请求数据
+        """
+        request: Message = json_format.ParseDict(
+            self.dict(exclude_defaults=True),
+            wcf_pb2.Request(),
+            ignore_unknown_fields=True,
+        )
+        return request.SerializeToString()
 
 
 class WxMsg(BaseModel):
@@ -342,19 +336,6 @@ class DbRows(BaseModel):
     def from_protobuf(cls, v: Message) -> dict:
         rows = [DbRow.from_protobuf(one) for one in v.rows]
         return {"rows": rows}
-
-
-class ResponseMsg(BaseModel):
-    """返回消息"""
-
-    status: Optional[int]
-    str: Optional[str]
-    wxmsg: Optional[WxMsg]
-    types: Optional[MsgTypes]
-    contacts: Optional[RpcContacts]
-    dbs: Optional[DbNames]
-    tables: Optional[DbTables]
-    rows: Optional[DbRows]
 
 
 class Response(BaseModel):

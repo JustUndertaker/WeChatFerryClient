@@ -1,6 +1,5 @@
 import asyncio
 
-from google.protobuf import json_format
 from google.protobuf.message import Message
 from pynng import Pair1
 from pynng.exceptions import Closed, NNGException, Timeout
@@ -84,14 +83,11 @@ class GrpcManager:
         """
         发送请求
         """
-        get_request: Message = json_format.ParseDict(
-            request.gen_dict(), wcf_pb2.Request(), ignore_unknown_fields=True
-        )
-        await self.api_socket.asend(get_request.SerializeToString())
+        await self.api_socket.asend(request.get_request_data())
         res = await self.api_socket.arecv_msg()
         rsp: Message = wcf_pb2.Response()
         rsp.ParseFromString(res.bytes)
-        msg = Response.parse_obj(rsp)
+        msg = Response.parse_protobuf(rsp)
         return msg
 
     def enable_receiving_msg(self) -> bool:
@@ -99,10 +95,10 @@ class GrpcManager:
         说明:
             允许接收信息
         """
-        request: Message = wcf_pb2.Request()
-        request.func = Functions.FUNC_ENABLE_RECV_TXT
-        self.api_socket.send(request.SerializeToString())
+        request = Request(func=Functions.FUNC_ENABLE_RECV_TXT)
+        self.api_socket.send(request.get_request_data())
         rsp = self.api_socket.recv_msg(block=True)
         reponse: Message = wcf_pb2.Response()
         reponse.ParseFromString(rsp.bytes)
-        return reponse.status == 0
+        msg = Response.parse_protobuf(rsp)
+        return msg.status == 0
