@@ -13,7 +13,7 @@ from .model import Functions, Request, Response
 
 
 def handle_msg(message: Response) -> None:
-    logger.debug(f"收到消息 - {escape_tag(message.dict())}")
+    logger.debug(f"收到消息 - {escape_tag(message.json(skip_defaults=True))}")
 
 
 class GrpcManager:
@@ -66,7 +66,7 @@ class GrpcManager:
                 data = await self.msg_socket.arecv_msg()
                 rsp: Message = wcf_pb2.Response()
                 rsp.ParseFromString(data.bytes)
-                msg = Response.parse_obj(rsp)
+                msg = Response.parse_protobuf(rsp)
                 handle_msg(msg)
             except Timeout:
                 continue

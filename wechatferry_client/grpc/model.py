@@ -2,7 +2,7 @@ from enum import IntEnum
 from typing import Optional
 
 from google.protobuf.message import Message
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel
 
 
 class Functions(IntEnum):
@@ -62,16 +62,6 @@ class TextMsg(BaseModel):
     aters: str
     """要@的人列表，逗号分隔"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {
-            "msg": v.msg,
-            "receiver": v.receiver,
-            "aters": v.aters,
-        }
-
 
 class PathMsg(BaseModel):
     """
@@ -82,12 +72,6 @@ class PathMsg(BaseModel):
     """要发送的图片的路径"""
     receiver: str
     """消息接收人"""
-
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"path": v.path, "receiver": v.receiver}
 
 
 class DbQuery(BaseModel):
@@ -100,12 +84,6 @@ class DbQuery(BaseModel):
     sql: str
     """查询 SQL"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"db": v.db, "sql": v.sql}
-
 
 class Verification(BaseModel):
     """
@@ -114,12 +92,6 @@ class Verification(BaseModel):
 
     v3: str
     v4: str
-
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"v3": v.v3, "v4": v.v4}
 
 
 class AddMembers(BaseModel):
@@ -131,12 +103,6 @@ class AddMembers(BaseModel):
     """要加的群ID"""
     wxids: str
     """要加群的人列表，逗号分隔"""
-
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"roomid": v.roomid, "wxids": v.wxids}
 
 
 class XmlMsg(BaseModel):
@@ -152,17 +118,6 @@ class XmlMsg(BaseModel):
     """图片路径"""
     type: int
     """消息类型"""
-
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {
-            "receiver": v.receiver,
-            "content": v.content,
-            "path": v.path,
-            "type": v.type,
-        }
 
 
 class RequestMsg(BaseModel):
@@ -224,10 +179,11 @@ class WxMsg(BaseModel):
     content: str
     """消息内容"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        """
+        从protobuf返回字典
+        """
         return {
             "is_self": v.is_self,
             "is_group": v.is_group,
@@ -248,11 +204,12 @@ class MsgTypes(BaseModel):
     MsgTypes: dict[int, str]
     """所有消息分类"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"MsgTypes": v.MsgTypes}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        """
+        从protobuf返回字典
+        """
+        return {"MsgTypes": dict(v.MsgTypes)}
 
 
 class RpcContact(BaseModel):
@@ -275,10 +232,8 @@ class RpcContact(BaseModel):
     gender: int
     """性别"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
+    @classmethod
+    def from_protobuf(cls, v: Message):
         return {
             "wxid": v.wxid,
             "code": v.code,
@@ -298,11 +253,10 @@ class RpcContacts(BaseModel):
     contacts: list[RpcContact]
     """联系人列表"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"contacts": v.contacts}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        contacts = [RpcContact.from_protobuf(one) for one in v.contacts]
+        return {"contacts": list(contacts)}
 
 
 class DbNames(BaseModel):
@@ -313,11 +267,9 @@ class DbNames(BaseModel):
     names: list[str]
     """名称列表"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"names": v.names}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        return {"names": list(v.names)}
 
 
 class DbTable(BaseModel):
@@ -328,24 +280,9 @@ class DbTable(BaseModel):
     sql: str
     """建表 SQL"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
         return {"name": v.name, "sql": v.sql}
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return DbTable(
-            name=v.name,
-            sql=v.sql,
-        )
 
 
 class DbTables(BaseModel):
@@ -356,11 +293,10 @@ class DbTables(BaseModel):
     tables: list[DbTable]
     """数据库表列表"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"tables": v.tables}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        tables = [DbTables.from_protobuf(one) for one in v.tables]
+        return {"tables": tables}
 
 
 class DbField(BaseModel):
@@ -375,10 +311,8 @@ class DbField(BaseModel):
     content: bytes
     """字段内容"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
         return {"type": v.type, "column": v.column, "content": v.content}
 
 
@@ -390,11 +324,10 @@ class DbRow(BaseModel):
     fields: list[DbField]
     """记录列表"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"fields": v.fields}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        fields = [DbField.from_protobuf(one) for one in v.fields]
+        return {"fields": fields}
 
 
 class DbRows(BaseModel):
@@ -405,11 +338,10 @@ class DbRows(BaseModel):
     rows: list[DbRow]
     """记录列表"""
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        return {"rows": v.rows}
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        rows = [DbRow.from_protobuf(one) for one in v.rows]
+        return {"rows": rows}
 
 
 class ResponseMsg(BaseModel):
@@ -430,59 +362,46 @@ class Response(BaseModel):
 
     func: Functions
     """返回类型"""
-    status: Optional[int]
-    str: Optional[str]
-    wxmsg: Optional[WxMsg]
-    types: Optional[MsgTypes]
-    contacts: Optional[RpcContacts]
-    dbs: Optional[DbNames]
-    tables: Optional[DbTables]
-    rows: Optional[DbRows]
+    status: Optional[int] = None
+    str: Optional[str] = None
+    wxmsg: Optional[WxMsg] = None
+    types: Optional[MsgTypes] = None
+    contacts: Optional[RpcContacts] = None
+    dbs: Optional[DbNames] = None
+    tables: Optional[DbTables] = None
+    rows: Optional[DbRows] = None
 
-    @root_validator(pre=True)
-    def from_protobuf(cls, v):
-        if not isinstance(v, Message):
-            raise TypeError("必须是protobuf的Message实例")
-        try:
-            status = v.status
-        except Exception:
-            status = None
-        try:
-            string = v.str
-        except Exception:
-            string = None
-        try:
-            wxmsg = v.wxmsg
-        except Exception:
-            wxmsg = None
-        try:
-            types = v.types
-        except Exception:
-            types = None
-        try:
-            contacts = v.contacts
-        except Exception:
-            contacts = None
-        try:
-            dbs = v.dbs
-        except Exception:
-            dbs = None
-        try:
-            tables = v.tables
-        except Exception:
-            tables = None
-        try:
-            rows = v.rows
-        except Exception:
-            rows = None
-        return {
-            "func": v.func,
-            "status": status,
-            "str": string,
-            "wxmsg": wxmsg,
-            "types": types,
-            "contacts": contacts,
-            "dbs": dbs,
-            "tables": tables,
-            "rows": rows,
-        }
+    @classmethod
+    def check_msg_type(cls, v: Message) -> dict:
+        """
+        检测是哪种消息
+        """
+        if v.HasField("status"):
+            return {"status": v.status}
+        if v.HasField("str"):
+            return {"str": v.str}
+        if v.HasField("wxmsg"):
+            return {"wxmsg": WxMsg.from_protobuf(v.wxmsg)}
+        if v.HasField("types"):
+            return {"types": MsgTypes.from_protobuf(v.types)}
+        if v.HasField("contacts"):
+            return {"contacts": RpcContacts.from_protobuf(v.contacts)}
+        if v.HasField("dbs"):
+            return {"dbs": DbNames.from_protobuf(v.dbs)}
+        if v.HasField("tables"):
+            return {"tables": DbTables.from_protobuf(v.tables)}
+        if v.HasField("rows"):
+            return {"rows": DbRows.from_protobuf(v.rows)}
+
+    @classmethod
+    def from_protobuf(cls, v: Message) -> dict:
+        data = {"func": v.func}
+        data.update(cls.check_msg_type(v))
+        return data
+
+    @classmethod
+    def parse_protobuf(cls, v: Message) -> "Response":
+        """
+        从protobuf中获取实例
+        """
+        return cls.parse_obj(cls.from_protobuf(v))
