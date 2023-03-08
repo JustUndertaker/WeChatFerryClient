@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+depends/logs
+depends/.wcf.lock
