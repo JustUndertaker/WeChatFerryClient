@@ -277,6 +277,15 @@ class Request(BaseModel):
     msg: RequestMsg
     """请求消息"""
 
+    def gen_dict(self) -> dict:
+        """生成dict"""
+        data = {"func": self.func, "msg": {}}
+        for key, value in self.msg.dict().items():
+            if value is not None:
+                data["msg"][key] = value
+                break
+        return data
+
 
 class Response(BaseModel):
     """返回消息"""
