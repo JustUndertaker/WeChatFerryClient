@@ -3,6 +3,8 @@
 """
 import subprocess
 
+from wechatferry_client.log import logger
+
 
 def install(cmd_path: str, debug: bool) -> bool:
     """
@@ -23,17 +25,18 @@ def install(cmd_path: str, debug: bool) -> bool:
     return child.returncode == 0
 
 
-def uninstall(cmd_path: str) -> bool:
+def uninstall(cmd_path: str) -> None:
     """
     说明:
         卸载安装的dll注入
 
     参数:
         * `cmd_path`: wcf.exe路径
-
-    返回:
-        * `bool`: 是否卸载成功
     """
+    logger.info("<y>正在卸载微信注入...</y>")
     cmd = [cmd_path, "stop"]
     child = subprocess.run(cmd)
-    return child.returncode == 0
+    if child.returncode == 0:
+        logger.info("<g>微信注入模块卸载成功...</g>")
+    else:
+        logger.error("<r>微信注入模块卸载失败...</r>")

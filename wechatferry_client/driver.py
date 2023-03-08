@@ -60,11 +60,11 @@ class Driver:
         return logging.getLogger("fastapi")
 
     def on_startup(self, func: Callable) -> Callable:
-        """参考文档: `Events <https://fastapi.tiangolo.com/advanced/events/#startup-event>`_"""
+        """参考文档: [Events](https://fastapi.tiangolo.com/advanced/events/#startup-event>)"""
         return self.server_app.on_event("startup")(func)
 
     def on_shutdown(self, func: Callable) -> Callable:
-        """参考文档: `Events <https://fastapi.tiangolo.com/advanced/events/#shutdown-event>`_"""
+        """参考文档: [Events](https://fastapi.tiangolo.com/advanced/events/#shutdown-event)"""
         return self.server_app.on_event("shutdown")(func)
 
     def run(
@@ -81,7 +81,7 @@ class Driver:
             "disable_existing_loggers": False,
             "handlers": {
                 "default": {
-                    "class": "ntchat_client.log.LoguruHandler",
+                    "class": "wechatferry_client.log.LoguruHandler",
                 },
             },
             "loggers": {
