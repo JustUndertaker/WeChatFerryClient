@@ -37,6 +37,6 @@ def uninstall(cmd_path: str) -> None:
     cmd = [cmd_path, "stop"]
     child = subprocess.run(cmd)
     if child.returncode == 0:
-        logger.info("<g>微信注入模块卸载成功...</g>")
+        logger.info("<g>微信注入模块卸载完毕...</g>")
     else:
         logger.error("<r>微信注入模块卸载失败...</r>")

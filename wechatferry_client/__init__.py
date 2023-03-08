@@ -35,7 +35,8 @@ def init():
 
     _Driver = Driver(config)
     _Grpc = GrpcManager()
-    _Driver.on_startup(init_grpc)
+    init_grpc()
+    _Driver.on_startup(_Grpc.connect_msg_socket)
     _Driver.on_shutdown(_Grpc.close)
     _Driver.on_shutdown(partial(uninstall, "./wcf.exe"))
 
@@ -44,11 +45,20 @@ def run() -> None:
     """
     启动
     """
+
     _Driver.run()
 
 
-def init_grpc():
+def init_grpc() -> None:
     """初始化grpc"""
-    result = _Grpc.init()
-    if not result:
-        _Driver.server_app.router.shutdown()
+    _Grpc.init()
+    if not _Grpc.check_is_login():
+        logger.error("<r>微信未登录，请登陆后操作</r>")
+        result = _Grpc.wait_for_login()
+        if not result:
+            logger.info("<g>进程退出...</g>")
+            _Grpc.close()
+            uninstall("./wcf.exe")
+            exit(0)
+
+    logger.info("<g>微信已登录，出发...</g>")

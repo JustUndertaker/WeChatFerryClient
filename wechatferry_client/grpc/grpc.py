@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from google.protobuf.message import Message
 from pynng import Pair1
@@ -36,16 +37,6 @@ class GrpcManager:
         logger.info("<y>正在连接到grpc...</y>")
         self.api_socket.dial("tcp://127.0.0.1:10086", block=True)
         logger.debug("<g>grpc连接成功...</g>")
-        logger.debug("<y>发送接收消息请求...</y>")
-        if not self.enable_receiving_msg():
-            logger.error("<r>请求通信出错...</r>")
-            return False
-        logger.debug("<g>请求接收消息成功...</g>")
-        logger.debug("<y>正在连接消息推送grpc...</y>")
-        self.msg_socket.dial("tcp://127.0.0.1:10087", block=True)
-        logger.success("<g>连接grpc成功...</g>")
-        asyncio.create_task(self.recv_msg())
-        return True
 
     def close(self) -> None:
         """
@@ -90,6 +81,32 @@ class GrpcManager:
         msg = Response.parse_protobuf(rsp)
         return msg
 
+    def request_sync(self, request: Request) -> Response:
+        """
+        发送请求，同步版
+        """
+        self.api_socket.send(request.get_request_data())
+        res = self.api_socket.recv_msg()
+        rsp: Message = wcf_pb2.Response()
+        rsp.ParseFromString(res.bytes)
+        msg = Response.parse_protobuf(rsp)
+        return msg
+
+    def connect_msg_socket(self) -> bool:
+        """
+        连接到接收消息soket
+        """
+        logger.debug("<y>发送接收消息请求...</y>")
+        if not self.enable_receiving_msg():
+            logger.error("<r>请求通信出错...</r>")
+            return False
+        logger.debug("<g>请求接收消息成功...</g>")
+        logger.debug("<y>正在连接消息推送grpc...</y>")
+        self.msg_socket.dial("tcp://127.0.0.1:10087", block=True)
+        logger.success("<g>连接grpc成功...</g>")
+        asyncio.create_task(self.recv_msg())
+        return True
+
     def enable_receiving_msg(self) -> bool:
         """
         说明:
@@ -100,5 +117,27 @@ class GrpcManager:
         rsp = self.api_socket.recv_msg(block=True)
         reponse: Message = wcf_pb2.Response()
         reponse.ParseFromString(rsp.bytes)
-        msg = Response.parse_protobuf(rsp)
-        return msg.status == 0
+        return reponse.status == 0
+
+    def check_is_login(self) -> bool:
+        """
+        检测是否登录
+        """
+        request = Request(func=Functions.FUNC_IS_LOGIN)
+        result = self.request_sync(request)
+        return result.status == 1
+
+    def wait_for_login(self) -> bool:
+        """
+        等待微信登录完成
+        """
+        while True:
+            try:
+                result = self.check_is_login()
+                if result:
+                    return True
+                time.sleep(1)
+            except KeyboardInterrupt:
+                return False
+            except Timeout:
+                return False
