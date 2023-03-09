@@ -50,7 +50,7 @@ class ApiManager:
     """
 
     def __init__(self) -> None:
-        self.grpc = None
+        self.grpc = GrpcManager()
 
     def init(self) -> None:
         """

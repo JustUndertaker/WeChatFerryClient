@@ -12,7 +12,9 @@ from .model import Functions, Request, Response
 
 
 def handle_msg(message: Response) -> None:
-    logger.debug(f"收到消息 - {escape_tag(message.json(skip_defaults=True))}")
+    logger.debug(
+        f"收到消息 - {escape_tag(message.json(skip_defaults=True,ensure_ascii=False))}"
+    )
 
 
 class GrpcManager:

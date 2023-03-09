@@ -87,7 +87,7 @@ class WeChatManager:
             logger.error(f"调用api出错：<r>{e}</r>")
             return Response(status=500, msg="请求参数错误", data={})
         try:
-            result = await self.grpc.request(grpc_request)
+            result = await self.api_manager.grpc.request(grpc_request)
         except Exception as e:
             logger.error(f"调用api出错：<r>{e}</r>")
             return Response(status=500, msg="响应错误", data={})
