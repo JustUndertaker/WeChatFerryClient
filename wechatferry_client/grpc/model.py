@@ -5,8 +5,6 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 from pydantic import BaseModel
 
-from . import wcf_pb2
-
 
 class Functions(IntEnum):
     """functions"""
@@ -139,17 +137,6 @@ class Request(BaseModel):
     m: Optional[AddMembers] = None
     xml: Optional[XmlMsg] = None
 
-    def get_request_data(self) -> bytes:
-        """
-        获取Request请求数据
-        """
-        request: Message = json_format.ParseDict(
-            self.dict(exclude_defaults=True),
-            wcf_pb2.Request(),
-            ignore_unknown_fields=True,
-        )
-        return request.SerializeToString()
-
 
 class WxMsg(BaseModel):
     """
@@ -173,22 +160,6 @@ class WxMsg(BaseModel):
     content: str
     """消息内容"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        """
-        从protobuf返回字典
-        """
-        return {
-            "is_self": v.is_self,
-            "is_group": v.is_group,
-            "type": v.type,
-            "id": v.id,
-            "xml": v.xml,
-            "sender": v.sender,
-            "roomid": v.roomid,
-            "content": v.content,
-        }
-
 
 class MsgTypes(BaseModel):
     """
@@ -197,13 +168,6 @@ class MsgTypes(BaseModel):
 
     MsgTypes: dict[int, str]
     """所有消息分类"""
-
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        """
-        从protobuf返回字典
-        """
-        return {"MsgTypes": dict(v.MsgTypes)}
 
 
 class RpcContact(BaseModel):
@@ -226,18 +190,6 @@ class RpcContact(BaseModel):
     gender: int
     """性别"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message):
-        return {
-            "wxid": v.wxid,
-            "code": v.code,
-            "name": v.name,
-            "country": v.country,
-            "province": v.province,
-            "city": v.city,
-            "gender": v.gender,
-        }
-
 
 class RpcContacts(BaseModel):
     """
@@ -246,11 +198,6 @@ class RpcContacts(BaseModel):
 
     contacts: list[RpcContact]
     """联系人列表"""
-
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        contacts = [RpcContact.from_protobuf(one) for one in v.contacts]
-        return {"contacts": list(contacts)}
 
 
 class DbNames(BaseModel):
@@ -261,10 +208,6 @@ class DbNames(BaseModel):
     names: list[str]
     """名称列表"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        return {"names": list(v.names)}
-
 
 class DbTable(BaseModel):
     """数据库表"""
@@ -274,10 +217,6 @@ class DbTable(BaseModel):
     sql: str
     """建表 SQL"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        return {"name": v.name, "sql": v.sql}
-
 
 class DbTables(BaseModel):
     """
@@ -286,11 +225,6 @@ class DbTables(BaseModel):
 
     tables: list[DbTable]
     """数据库表列表"""
-
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        tables = [DbTables.from_protobuf(one) for one in v.tables]
-        return {"tables": tables}
 
 
 class DbField(BaseModel):
@@ -305,10 +239,6 @@ class DbField(BaseModel):
     content: bytes
     """字段内容"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        return {"type": v.type, "column": v.column, "content": v.content}
-
 
 class DbRow(BaseModel):
     """
@@ -318,11 +248,6 @@ class DbRow(BaseModel):
     fields: list[DbField]
     """记录列表"""
 
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        fields = [DbField.from_protobuf(one) for one in v.fields]
-        return {"fields": fields}
-
 
 class DbRows(BaseModel):
     """
@@ -331,11 +256,6 @@ class DbRows(BaseModel):
 
     rows: list[DbRow]
     """记录列表"""
-
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        rows = [DbRow.from_protobuf(one) for one in v.rows]
-        return {"rows": rows}
 
 
 class Response(BaseModel):
@@ -353,36 +273,14 @@ class Response(BaseModel):
     rows: Optional[DbRows] = None
 
     @classmethod
-    def check_msg_type(cls, v: Message) -> dict:
-        """
-        检测是哪种消息
-        """
-        if v.HasField("status"):
-            return {"status": v.status}
-        if v.HasField("str"):
-            return {"str": v.str}
-        if v.HasField("wxmsg"):
-            return {"wxmsg": WxMsg.from_protobuf(v.wxmsg)}
-        if v.HasField("types"):
-            return {"types": MsgTypes.from_protobuf(v.types)}
-        if v.HasField("contacts"):
-            return {"contacts": RpcContacts.from_protobuf(v.contacts)}
-        if v.HasField("dbs"):
-            return {"dbs": DbNames.from_protobuf(v.dbs)}
-        if v.HasField("tables"):
-            return {"tables": DbTables.from_protobuf(v.tables)}
-        if v.HasField("rows"):
-            return {"rows": DbRows.from_protobuf(v.rows)}
-
-    @classmethod
-    def from_protobuf(cls, v: Message) -> dict:
-        data = {"func": v.func}
-        data.update(cls.check_msg_type(v))
-        return data
-
-    @classmethod
     def parse_protobuf(cls, v: Message) -> "Response":
         """
         从protobuf中获取实例
         """
-        return cls.parse_obj(cls.from_protobuf(v))
+        data = json_format.MessageToDict(
+            message=v,
+            including_default_value_fields=True,
+            use_integers_for_enums=True,
+            preserving_proto_field_name=True,
+        )
+        return cls.parse_obj(data)
