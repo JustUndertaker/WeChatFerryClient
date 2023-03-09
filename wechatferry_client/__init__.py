@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from wechatferry_client.cmd import install, uninstall
+from wechatferry_client.cmd import install
 from wechatferry_client.config import Config, Env
 from wechatferry_client.driver import Driver
 from wechatferry_client.http import router
