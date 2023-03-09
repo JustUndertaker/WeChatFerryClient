@@ -1,5 +1,7 @@
 from functools import partial
 
+from fastapi import FastAPI
+
 from wechatferry_client.cmd import install, uninstall
 from wechatferry_client.config import Config, Env
 from wechatferry_client.driver import Driver
@@ -12,7 +14,7 @@ _Grpc: GrpcManager = None
 """grpc管理器"""
 
 
-def init():
+def init() -> None:
     """
     初始化client
     """
@@ -53,7 +55,7 @@ def init_grpc() -> None:
     """初始化grpc"""
     _Grpc.init()
     if not _Grpc.check_is_login():
-        logger.error("<r>微信未登录，请登陆后操作</r>")
+        logger.info("<r>微信未登录，请登陆后操作</r>")
         result = _Grpc.wait_for_login()
         if not result:
             logger.info("<g>进程退出...</g>")
@@ -62,3 +64,34 @@ def init_grpc() -> None:
             exit(0)
 
     logger.info("<g>微信已登录，出发...</g>")
+
+
+def get_grpc() -> GrpcManager:
+    """
+    获取grpc管理器
+    """
+    if _Grpc is None:
+        raise ValueError("grpc尚未初始化...")
+    return _Grpc
+
+
+def get_driver() -> Driver:
+    """
+    获取后端驱动器
+    """
+    if _Driver is None:
+        raise ValueError("驱动器尚未初始化...")
+    return _Driver
+
+
+def get_app() -> FastAPI:
+    """获取 Server App 对象。
+
+    返回:
+        Server App 对象
+
+    异常:
+        ValueError: 全局 `Driver` 对象尚未初始化 (`wechatferry_client.init` 尚未调用)
+    """
+    driver = get_driver()
+    return driver.server_app
