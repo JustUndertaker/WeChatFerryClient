@@ -3,7 +3,7 @@ from typing import Optional
 
 from google.protobuf import json_format
 from google.protobuf.message import Message
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import wcf_pb2
 
@@ -277,7 +277,7 @@ class Response(BaseModel):
     func: Functions
     """返回类型"""
     status: Optional[int] = None
-    str: Optional[str] = None
+    string: Optional[str] = Field(alias="str")
     wxmsg: Optional[WxMsg] = None
     types: Optional[MsgTypes] = None
     contacts: Optional[RpcContacts] = None

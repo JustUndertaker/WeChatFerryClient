@@ -5,12 +5,10 @@ from wechatferry_client.config import Config, Env
 from wechatferry_client.driver import Driver
 from wechatferry_client.http import router
 from wechatferry_client.log import default_filter, log_init, logger
-from wechatferry_client.wechat import WeChatManager
+from wechatferry_client.wechat import get_wechat
 
 _Driver: Driver = None
 """全局后端驱动器"""
-_WeChat: WeChatManager = None
-"""微信管理器"""
 
 
 def init() -> None:
@@ -18,7 +16,6 @@ def init() -> None:
     初始化client
     """
     global _Driver
-    global _WeChat
 
     env = Env()
     config = Config(_common_config=env.dict())
@@ -35,8 +32,8 @@ def init() -> None:
     logger.success("<g>微信注入成功...</g>")
 
     _Driver = Driver(config)
-    _WeChat = WeChatManager(config)
-    _WeChat.init()
+    _WeChat = get_wechat()
+    _WeChat.init(config)
 
     app = _Driver.server_app
     app.include_router(router)
@@ -51,15 +48,6 @@ def run() -> None:
     """
 
     _Driver.run()
-
-
-def get_wechat() -> WeChatManager:
-    """
-    获取wechat管理器
-    """
-    if _WeChat is None:
-        raise ValueError("wechat管理端尚未初始化...")
-    return _WeChat
 
 
 def get_driver() -> Driver:

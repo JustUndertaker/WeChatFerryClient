@@ -148,4 +148,4 @@ class GrpcManager:
         """
         request = Request(func=Functions.FUNC_GET_SELF_WXID)
         result = self.request_sync(request)
-        return result.str
+        return result.string

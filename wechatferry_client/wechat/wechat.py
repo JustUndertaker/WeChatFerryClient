@@ -56,15 +56,16 @@ class WeChatManager:
     self_id: str
     """自身微信id"""
 
-    def __init__(self, config: Config) -> None:
-        self.config = config
+    def __init__(self) -> None:
+        self.config = None
         self.grpc = GrpcManager()
         self.self_id = None
 
-    def init(self) -> None:
+    def init(self, config: Config) -> None:
         """
         初始化wechat管理端，需要在uvicorn.run之前执行
         """
+        self.config = config
         self.grpc.init()
         if not self.grpc.check_is_login():
             logger.info("<r>微信未登录，请登陆后操作</r>")
@@ -103,10 +104,10 @@ class WeChatManager:
             return Response(status=404, msg=f"{request.action} :该功能未实现", data={})
         # 调用action
         try:
+            request.params["func"] = action.action_to_function()
             grpc_request = GrpcRequest.parse_obj(request.params)
         except Exception as e:
             return Response(status=500, msg="请求错误", data={})
-        grpc_request.func = action.action_to_function()
         try:
             result = await self.grpc.request(grpc_request)
         except Exception as e:
