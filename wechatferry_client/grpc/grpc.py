@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 from google.protobuf.message import Message
 from pynng import Pair1
@@ -118,34 +117,3 @@ class GrpcManager:
         reponse: Message = wcf_pb2.Response()
         reponse.ParseFromString(rsp.bytes)
         return reponse.status == 0
-
-    def check_is_login(self) -> bool:
-        """
-        检测是否登录
-        """
-        request = Request(func=Functions.FUNC_IS_LOGIN)
-        result = self.request_sync(request)
-        return result.status == 1
-
-    def wait_for_login(self) -> bool:
-        """
-        等待微信登录完成
-        """
-        while True:
-            try:
-                result = self.check_is_login()
-                if result:
-                    return True
-                time.sleep(1)
-            except KeyboardInterrupt:
-                return False
-            except Timeout:
-                return False
-
-    def get_wxid(self) -> str:
-        """
-        获取wxid
-        """
-        request = Request(func=Functions.FUNC_GET_SELF_WXID)
-        result = self.request_sync(request)
-        return result.string

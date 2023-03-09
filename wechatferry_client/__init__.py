@@ -24,8 +24,7 @@ def init() -> None:
     logger.info(f"Current <y><b>Env: {env.environment}</b></y>")
     logger.debug(f"Loaded <y><b>Config</b></y>: {str(config.dict())}")
 
-    uninstall("./wcf.exe")
-    logger.info("<y>正在注入微信...</y>")
+    logger.info("<y>正在注入微信进程...</y>")
     if not install(cmd_path="./wcf.exe", debug=True):
         logger.error("<r>注入微信失败...</r>")
         exit(-1)

@@ -1,4 +1,7 @@
+import time
 from enum import Enum
+
+from pynng.exceptions import Timeout
 
 from wechatferry_client.cmd import uninstall
 from wechatferry_client.config import Config
@@ -42,43 +45,39 @@ class Action(str, Enum):
                 return func
 
 
-class WeChatManager:
+class ApiManager:
     """
-    微信客户端管理
+    api管理器，负责与grpc沟通调用api
     """
 
-    config: Config
-    """应用设置"""
     grpc: GrpcManager
     """
     grpc通信管理器
     """
-    self_id: str
-    """自身微信id"""
 
     def __init__(self) -> None:
-        self.config = None
-        self.grpc = GrpcManager()
-        self.self_id = None
+        self.grpc = None
 
-    def init(self, config: Config) -> None:
+    def init(self) -> None:
         """
-        初始化wechat管理端，需要在uvicorn.run之前执行
+        初始化grpc
         """
-        self.config = config
         self.grpc.init()
-        if not self.grpc.check_is_login():
+        if not self.check_is_login():
             logger.info("<r>微信未登录，请登陆后操作</r>")
             result = self.grpc.wait_for_login()
             if not result:
                 logger.info("<g>进程退出...</g>")
-                self.grpc.close()
-                uninstall("./wcf.exe")
+                self.close()
                 exit(0)
         logger.info("<g>微信已登录，出发...</g>")
-        logger.debug("<y>开始获取wxid...</y>")
-        self.self_id = self.grpc.get_wxid()
-        logger.debug("<g>微信id获取成功...</g>")
+
+    def close(self) -> None:
+        """
+        关闭
+        """
+        self.grpc.close()
+        uninstall("./wcf.exe")
 
     def connect_msg_socket(self) -> bool:
         """
@@ -86,11 +85,79 @@ class WeChatManager:
         """
         return self.grpc.connect_msg_socket()
 
+    def get_wxid(self) -> str:
+        """
+        获取wxid
+        """
+        request = Request(func=Functions.FUNC_GET_SELF_WXID)
+        result = self.grpc.request_sync(request)
+        return result.string
+
+    def check_is_login(self) -> bool:
+        """
+        检测是否登录
+        """
+        request = Request(func=Functions.FUNC_IS_LOGIN)
+        result = self.grpc.request_sync(request)
+        return result.status == 1
+
+
+class WeChatManager:
+    """
+    微信客户端管理
+    """
+
+    config: Config
+    """应用设置"""
+    api_manager: ApiManager
+    """
+    api管理模块
+    """
+    self_id: str
+    """自身微信id"""
+
+    def __init__(self) -> None:
+        self.config = None
+        self.api_manager = ApiManager()
+        self.self_id = None
+
+    def init(self, config: Config) -> None:
+        """
+        初始化wechat管理端，需要在uvicorn.run之前执行
+        """
+        self.config = config
+        self.api_manager.init()
+
+        logger.debug("<y>开始获取wxid...</y>")
+        self.self_id = self.api_manager.get_wxid()
+        logger.debug("<g>微信id获取成功...</g>")
+
+    def wait_for_login(self) -> bool:
+        """
+        等待微信登录完成
+        """
+        while True:
+            try:
+                result = self.api_manager.check_is_login()
+                if result:
+                    return True
+                time.sleep(1)
+            except KeyboardInterrupt:
+                return False
+            except Timeout:
+                return False
+
+    def connect_msg_socket(self) -> bool:
+        """
+        连接到接收socket
+        """
+        return self.api_manager.connect_msg_socket()
+
     def close(self) -> None:
         """
         管理微信管理模块
         """
-        self.grpc.close()
+        self.api_manager.close()
         uninstall("./wcf.exe")
 
     async def _handle_api(self, request: Request) -> Response:
