@@ -141,3 +141,11 @@ class GrpcManager:
                 return False
             except Timeout:
                 return False
+
+    def get_wxid(self) -> str:
+        """
+        获取wxid
+        """
+        request = Request(func=Functions.FUNC_GET_SELF_WXID)
+        result = self.request_sync(request)
+        return result.str
