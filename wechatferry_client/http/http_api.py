@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Body, Response
 from pydantic.error_wrappers import ValidationError
 
+from wechatferry_client import get_wechat
 from wechatferry_client.log import logger
+from wechatferry_client.model import HttpRequest, HttpResponse
 from wechatferry_client.utils import escape_tag
-
-from .model import HttpRequest, HttpResponse
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ async def _(action: str, response: Response, params=Body(None)) -> None:
     except ValidationError:
         logger.error("<m>http_api</m> - <r>请求参数不正确!</r>")
         return HttpResponse(status=405, msg="请求参数不正确！", data={})
-    wechat_client = get_wechat_client()
+    wechat_client = get_wechat()
     res = wechat_client.handle_http_api(http_request)
     response.headers["X-self-ID"] = wechat_client.self_id
     response.headers["access_token"] = wechat_client.config.access_token

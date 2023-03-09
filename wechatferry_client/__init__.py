@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from wechatferry_client.cmd import install, uninstall
 from wechatferry_client.config import Config, Env
 from wechatferry_client.driver import Driver
+from wechatferry_client.http import router
 from wechatferry_client.log import default_filter, log_init, logger
 from wechatferry_client.wechat import WeChatManager
 
@@ -34,8 +35,12 @@ def init() -> None:
     logger.success("<g>微信注入成功...</g>")
 
     _Driver = Driver(config)
-    _WeChat = WeChatManager()
+    _WeChat = WeChatManager(config)
     _WeChat.init()
+
+    app = _Driver.server_app
+    app.include_router(router)
+    logger.success("<g>http api已开启...</g>")
     _Driver.on_startup(_WeChat.connect_msg_socket)
     _Driver.on_shutdown(_WeChat.close)
 
