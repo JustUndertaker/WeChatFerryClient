@@ -5,6 +5,8 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 from pydantic import BaseModel
 
+from . import wcf_pb2
+
 
 class Functions(IntEnum):
     """functions"""
@@ -136,6 +138,17 @@ class Request(BaseModel):
     v: Optional[Verification] = None
     m: Optional[AddMembers] = None
     xml: Optional[XmlMsg] = None
+
+    def get_request_data(self) -> bytes:
+        """
+        获取Request请求数据
+        """
+        request: Message = json_format.ParseDict(
+            self.dict(exclude_defaults=True),
+            wcf_pb2.Request(),
+            ignore_unknown_fields=True,
+        )
+        return request.SerializeToString()
 
 
 class WxMsg(BaseModel):
